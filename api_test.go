@@ -41,3 +41,10 @@ func TestClient_GetFaxDocuments(t *testing.T) {
 		return
 	}
 }
+
+func TestClient_GetFaxDescription(t *testing.T) {
+	_, err := client.GetFaxDescription("0afbf6f9-998e-4863-9a08-757bf1308db9")
+	if err != nil {
+		return
+	}
+}
