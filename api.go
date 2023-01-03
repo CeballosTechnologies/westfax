@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -60,6 +59,12 @@ type Response struct {
 	Success bool
 }
 
+type ChangeFaxFilterValueResponse struct {
+	Response
+
+	Result bool `json:"Result"`
+}
+
 type GetFaxDescriptionResponse struct {
 	Response
 	Result []Fax
@@ -93,6 +98,42 @@ func New(username string, password string, productId string) *Client {
 	return client
 }
 
+func (c *Client) ChangeFaxFilterValue(faxId string, filterValue string) (bool, error) {
+	form := url.Values{}
+	form.Add("Username", c.username)
+	form.Add("Password", c.password)
+	form.Add("Cookies", "false")
+	form.Add("ProductId", c.productId)
+	form.Add("FaxIds1", fmt.Sprintf(`{"Id":"%s"}`, faxId))
+	form.Add("FilterValue", filterValue)
+
+	resp, err := http.PostForm(fmt.Sprintf("%s/Fax_ChangeFaxFilterValue/json", &c.url), form)
+	if err != nil {
+		return false, err
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
+	var faxResponse ChangeFaxFilterValueResponse
+	err = json.Unmarshal(body, &faxResponse)
+	if err != nil {
+		return false, err
+	}
+
+	return faxResponse.Result, nil
+}
+
 func (c *Client) SecurityPing(ping string) (string, error) {
 	form := url.Values{}
 	form.Add("StringParams1", ping)
@@ -110,7 +151,7 @@ func (c *Client) SecurityPing(ping string) (string, error) {
 		_ = Body.Close()
 	}(resp.Body)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -144,7 +185,7 @@ func (c *Client) GetFaxDescription(faxId string) (Fax, error) {
 		_ = Body.Close()
 	}(resp.Body)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fax, err
 	}
@@ -182,7 +223,7 @@ func (c *Client) GetFaxDocument(faxId string) (Fax, error) {
 		_ = Body.Close()
 	}(resp.Body)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fax, err
 	}
@@ -218,7 +259,7 @@ func (c *Client) GetInboundFaxIdentifiers(startDate string) ([]Fax, error) {
 		_ = Body.Close()
 	}(resp.Body)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
